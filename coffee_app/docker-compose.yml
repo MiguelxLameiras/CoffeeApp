@@ -8,13 +8,20 @@ services:
       POSTGRES_USER: "coffee_user"
       POSTGRES_DB: "coffee_db"
     volumes:
-      - ./coffee_app/postgres-data:/var/lib/postgresql/data
+      - ./dbPostgres/postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coffee_user -d coffee_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
-    build: .
+    image: eclipse-temurin:21-jre  
+    volumes:
+      - ./target/coffee_app-0.0.1-SNAPSHOT.jar:/app.jar  
     ports:
       - "8080:8080"
     depends_on:
@@ -23,5 +30,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/coffee_db
       SPRING_DATASOURCE_USERNAME: coffee_user
-      SPRING_DATASOURCE_PASSWORD: 1234
-    restart: on-failure
+      SPRING_DATASOURCE_PASSWORD: "1234"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    command: java -jar /app.jar
+    restart: unless-stopped
